@@ -1,4 +1,5 @@
-### /r/conservative sentiment analysis ###
+### API Date Range Ingestion Engine ###
+## /r/conservative sentiment analysis ##
 
 # Date ranges will be hard-coded into the function for now for ease of tinkering under the "before"
 # and "after" local variables
@@ -13,106 +14,97 @@
 # but in future may need to be raised considerably
 
 # Best to iterate through different date ranges to avoid ~40 hours of continuous processing
-# By 6 months is far too large, considering
-
 
 ##### MAKE SURE TO CHANGE THE CSV FILE NAME AFTER EACH ROUND OR FACE LOSING HOURS OF API CALL DATA#####
 
-###
-## Round 1 - Jan 1 2021 -> July 1st 2020
-# before = int(dt.datetime(2021,1,1,0,0).timestamp())
-# after = int(dt.datetime(2020,7,1,0,0).timestamp())
-###
-
-###
-## Round 2 - June 30th 2020 -> Jan 2nd 2020
-# before = int(dt.datetime(2020,6,30,0,0).timestamp())
-# after = int(dt.datetime(2020,1,2,0,0).timestamp())
-###
-
-###
-## Round 3 - Jan 1 2020 -> July 1st 2019
-# before = int(dt.datetime(2020,1,1,0,0).timestamp())
-# after = int(dt.datetime(2019,7,1,0,0).timestamp())
-###
-
-###
-## Round 4 - June 30th 2019 -> Jan 2nd 2019
-# before = int(dt.datetime(2019,6,30,0,0).timestamp())
-# after = int(dt.datetime(2019,1,2,0,0).timestamp())
-###
-
-###
-## Round 5 - Jan 1 2019 -> July 1st 2018
-# before = int(dt.datetime(2019,1,1,0,0).timestamp())
-# after = int(dt.datetime(2018,7,1,0,0).timestamp())
-###
-
-###
-## Round 6 - June 30th 2018 -> Jan 2nd 2018
-# before = int(dt.datetime(2018,6,30,0,0).timestamp())
-# after = int(dt.datetime(2018,1,2,0,0).timestamp())
-###
-
-###
-## Round 7 - Jan 1 2018 -> July 1st 2017
-# before = int(dt.datetime(2018,1,1,0,0).timestamp())
-# after = int(dt.datetime(2017,7,1,0,0).timestamp())
-###
-
-###
-## Round 8 - June 30th 2017 -> Jan 2nd 2017
-# before = int(dt.datetime(2017,6,30,0,0).timestamp())
-# after = int(dt.datetime(2017,1,2,0,0).timestamp())
-###
-
-###
-## Round 9 - Jan 1 2017 -> July 1st 2016
-# before = int(dt.datetime(2017,1,1,0,0).timestamp())
-# after = int(dt.datetime(2016,7,1,0,0).timestamp())
-###
-
-###
-## Round 10 - June 30th 2016 -> Jan 2nd 2016
-# before = int(dt.datetime(2016,6,30,0,0).timestamp())
-# after = int(dt.datetime(2016,1,2,0,0).timestamp())
-###
-
-###
-## Round 11 - Jan 1 2016 -> June 18th 2015
-# before = int(dt.datetime(2016,1,1,0,0).timestamp())
-# after = int(dt.datetime(2015,6,18,0,0).timestamp())
-###
-
-##### MAKE SURE TO CHANGE THE CSV FILE NAME AFTER EACH ROUND OR FACE LOSING HOURS OF API CALL DATA#####
+## 2:20am 8/22/2021
+# Currently finished the API date ingenstion engine, as off last check there may be a problem with sometimes
+# not successfully retrieving comments, but it could just be some over calling the API today in mass
+# will need to stress test after my IP address has "cooled down" a bit
 
 
 import datetime as dt
 from pmaw import PushshiftAPI
 import pandas as pd
+import time
 
-from datetime import date, timedelta
+from datetime import datetime, timedelta
 
-def pushshift_api_call(subreddit):
+## Calls the Pushshift.io API for a specific Subreddit and grabs all comments within a user supplied date range
+# converts the datetime float class of the 'before' and 'after' parameters into integers (required for api.search.comments())
+# calls pmaw api.search.comments() for user inputed subreddit, limit, and date range(start, stop, step)
+# num_workers is 4x how many logical processors you CPU has for optimized multithreading
+# mem_safe is for not overloading RAM while calling huge numbers of comment data from the Reddit API
+
+def pushshift_api_call(subreddit, before, after, limit = 10000000):
     api = PushshiftAPI()
-    before = int(dt.datetime(2021,1,1,0,0).timestamp())
-    after = int(dt.datetime(2020,7,1,0,0).timestamp())
-    limit = 3000000
-    comments = api.search_comments(subreddit=subreddit, limit=limit, before=before, after=after, num_workers = 60, mem_safe = True)
+
+    print(str(before) + " " + str(after))    
+    before = int(before)
+    after = int(after)
+    print(str(before) + " " + str(after))
+    
+    comments = api.search_comments(subreddit=subreddit, limit=limit, before=before, after=after, num_workers = 50, mem_safe = True)
     print(f'Retrieved {len(comments)} comments from Pushshift')
     comments_df = pd.DataFrame(comments)
 	#preview the comments data
     comments_df.head(5)
-    comments_df.to_csv('./conservative_comments_round_1.csv', header=True, index=False, columns=list(comments_df.axes[1]))
+    comments_df.to_csv('./conservative_comments' + datetime.fromtimestamp(before).strftime("%Y%b%d") +
+                        "_" + datetime.fromtimestamp(after).strftime("%Y%b%d") + '.csv',
+                        header=True, index=False, columns=list(comments_df.axes[1]))
+
+
+## Just for fun, ended up not being super useful, keeping it because of how short it is!
 
 def daterange(start_date, end_date):
     for n in range(int((end_date - start_date).days)):
         yield start_date + timedelta(n)
 
+
+## Example Call:
+## NewList = list(date_range('20150101', '20150228', 4))
+# This function ingests dates in the str form 'yyyymmdd' which is formally recognized by datetime as "%Y%m%d"
+# it takes these ingested dates and finds the difference between them and divides it by the intervals selected
+# then the start date is iterated forward by the differece date multiplied by the current interval iteration (diff * interval)
+# each individual iteration through the dates is then yielded outward to be written to some external variable/dataframe/list
+# yield is used so this function can stay lightweight and continue operating per each iteration instead of having to write
+# a variable internally
+
+def date_range(start, end, intv):
+    start = datetime.strptime(start,"%Y%m%d")
+    end = datetime.strptime(end,"%Y%m%d")
+    diff = (end  - start ) / intv
+    for i in range(intv):
+        yield (start + diff * i).strftime("%Y%m%d")
+    yield end.strftime("%Y%m%d")
+
+
+## Converts a list of dates formated '%Y%m%d' into a list of unix times
+# Very similar to the date_range() function, but converts dates to unix date format
+# I seperated this out from date_rangeso more datetime operations could be applied to
+# non-timestamped converted dates if the user prefers
+
+def date2timestamp(DateList):
+    TimeStampedDateList = []
+    for i in range(len(DateList)):
+        TimeStampedDateList.append(int(time.mktime(dt.datetime.strptime(DateList[i], "%Y%m%d").timetuple())))
+    return TimeStampedDateList
+
+
+def pushshiftAPIController(subreddit, before, after, interval, limit = 10000000):
+    print("debugging date formats, entering function as: " + before + " " + after)
+    DateList = list(date2timestamp(list(date_range(before, after, interval))))
+    print("debugging date formats, returning from date2timestamp() function as: " + str(list(DateList)))
+    try:
+        for i in range(len(DateList)):
+            pushshift_api_call(subreddit, DateList[i], DateList[i+1], limit)
+            print("Finished Date Iteration " + str(DateList[i]) + " - " + str(DateList[i+1]))
+    except IndexError:
+        print("List index out of range, but not an actual problem. Just practicing error handling in Python")
+        
+
+
 if __name__ == '__main__':
-    pushshift_api_call("conservative")
-    #start_date = date(2013, 1, 1)
-    #end_date = date(2015, 6, 2)
-    #DateList = []
-    #DateList = [single_date.strftime("%Y-%m-%d") for single_date in daterange(start_date, end_date)]
-    #DateList = [int(dt.datetime(single_date).timestamp()) for single_date in daterange(start_date, end_date)]
+    beforeDate = '20200215'
+    afterDate = '20200101'
+    pushshiftAPIController("conservative", beforeDate, afterDate, interval = 5, limit = 100)
