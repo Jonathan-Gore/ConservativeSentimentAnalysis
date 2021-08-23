@@ -44,7 +44,7 @@ def pushshift_api_call(subreddit, before, after, limit = 10000000):
     after = int(after)
     print(str(before) + " " + str(after))
     
-    comments = api.search_comments(subreddit=subreddit, limit=limit, before=before, after=after, num_workers = 50, mem_safe = True)
+    comments = api.search_comments(subreddit=subreddit, limit=limit, before=before, after=after, num_workers = 16, mem_safe = True)
     print(f'Retrieved {len(comments)} comments from Pushshift')
     comments_df = pd.DataFrame(comments)
 	#preview the comments data
@@ -107,4 +107,6 @@ def pushshiftAPIController(subreddit, before, after, interval, limit = 10000000)
 if __name__ == '__main__':
     beforeDate = '20200215'
     afterDate = '20200101'
-    pushshiftAPIController("conservative", beforeDate, afterDate, interval = 5, limit = 100)
+    pushshiftAPIController("conservative", beforeDate, afterDate, interval = 10, limit = 10000000)
+
+    
