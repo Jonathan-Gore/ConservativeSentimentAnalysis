@@ -16,9 +16,10 @@ from os import listdir
 from os.path import isfile, join
 
 from vaderSentiment.vaderSentiment import SentimentIntensityAnalyzer
-#note: depending on how you installed (e.g., using source code download versus pip install), you may need to import like this:
-#from vaderSentiment import SentimentIntensityAnalyzer
-#Compound score > 0.05 is positive, 0.05 - -0.05 neutral, < -0.05 negative
+# note: depending on how you installed (e.g., using source code download versus pip install), you may need to import like this:
+# from vaderSentiment import SentimentIntensityAnalyzer
+# Compound score > 0.05 is positive, 0.05 - -0.05 neutral, < -0.05 negative
+# May need to cluster compound scores to get a better assessment of negativity
 
 ## Function for ingesting csv data
 # First it looks through a userinputed path -- in future would like to make this a base directory of the script
@@ -51,6 +52,8 @@ def cleanDataframe(CommentDataframe):
     CommentDataframe["bodyclean"] = CommentDataframe['body'].str.lower().str.replace('[^\w\s]','')
     # replace all "deleted" comments with NaN to be dropped shortly
     CommentDataframe["bodyclean"].replace('deleted', np.nan, inplace=True)
+    CommentDataframe["bodyclean"].replace('removed', np.nan, inplace=True)
+    CommentDataframe["bodyclean"].replace('', np.nan, inplace=True)
     # Drop all NaN values (previously "deleted" comments), cleaning up the dataset
     CommentDataframe.dropna(subset=["bodyclean"], inplace=True)
 
@@ -80,7 +83,7 @@ def matchValues2Sentiment(ScoredComments, SentimentValue):
     Comment = []
     for i in range(len(ScoredComments)):
         Comment = list(ScoredComments.loc[i,'bodyclean'].split())
-        print(str(ScoredComments.iloc[i,1]))
+        print(str(SentimentValue) + " " + str(i) + "/" + str(len(ScoredComments)) + " " + str(ScoredComments.loc[i,'id']))
         if SentimentValue in Comment:
             ScoredComments.loc[i,str(SentimentValue)] = 1
         else:
@@ -90,30 +93,34 @@ def matchValues2Sentiment(ScoredComments, SentimentValue):
     return ScoredComments
 
 
-def commentQueryController(ScoredComments, WordsOfInterest):
+def commentQueryController(ScoredComments, WordsOfInterest, WordCategory):
     for word in WordsOfInterest:
         ScoredComments = matchValues2Sentiment(ScoredComments, word)
+        ScoredComments.to_csv('C:/Users/Jonathan/Documents/GitHub/ConservativeSentimentAnalysis/master_scored_queried.csv', index = False)
+    
+    ScoredComments[WordCategory] = ['Y' if x > 0 else 'N' for x in np.sum(ScoredComments.filter(like=WordsOfInterest).values == 'Y',1)]
 
-    return ScoredComments
+    return print("completed")
 
 
 if __name__ == '__main__':
 
     ## These successfully combined all of the API csv files into one master file
     #NewDataFrame = comment2MasterDataframe('C:/Users/Jonathan/Documents/GitHub/ConservativeSentimentAnalysis')
-    #NewDataFrame.to_csv('C:/Users/Jonathan/Documents/GitHub/ConservativeSentimentAnalysis/master.csv')
+    #NewDataFrame.to_csv('C:/Users/Jonathan/Documents/GitHub/ConservativeSentimentAnalysis/master.csv', index=False)
     #########
 
     #MasterCSV_DF = pd.read_csv('C:/Users/Jonathan/Documents/GitHub/ConservativeSentimentAnalysis/master.csv')
     #countries = pd.read_csv('C:/Users/Jonathan/Documents/GitHub/ConservativeSentimentAnalysis/statistics.csv', encoding = "utf-8")
 
     #NewMasterCSV_DF = countWordFrequency(MasterCSV_DF, countries)
-    #NewMasterCSV_DF.to_csv('C:/Users/Jonathan/Documents/GitHub/ConservativeSentimentAnalysis/master_clean.csv')
+    #NewMasterCSV_DF.to_csv('C:/Users/Jonathan/Documents/GitHub/ConservativeSentimentAnalysis/master_clean.csv', index=False)
     #print("complete")
 
     ## These succesfully cleaned and removed "deleted" comments
+    #MasterCSV_DF = pd.read_csv('C:/Users/Jonathan/Documents/GitHub/ConservativeSentimentAnalysis/master_clean_scores.csv')
     #CleanMasterCSV = cleanDataframe(MasterCSV_DF)
-    #CleanMasterCSV.to_csv('C:/Users/Jonathan/Documents/GitHub/ConservativeSentimentAnalysis/master_clean.csv')
+    #CleanMasterCSV.to_csv('C:/Users/Jonathan/Documents/GitHub/ConservativeSentimentAnalysis/master_clean_scores.csv', index=False)
     #print("complete")
 
     ## These successfully counted all word frequencies in the master_clean.csv and wrote them to a new csv file
@@ -121,25 +128,30 @@ if __name__ == '__main__':
     #CleanMasterCSV = pd.read_csv('C:/Users/Jonathan/Documents/GitHub/ConservativeSentimentAnalysis/master_clean.csv')
     #print("beginning countWordFrequency() function call")
     #WordList = countWordFrequency(CleanMasterCSV)
-    #WordList.to_csv('C:/Users/Jonathan/Documents/GitHub/ConservativeSentimentAnalysis/wordlist.csv')
+    #WordList.to_csv('C:/Users/Jonathan/Documents/GitHub/ConservativeSentimentAnalysis/wordlist.csv', index=False)
     #print("complete")
 
     ## This worked! Created a list of sentiment values
     # then wrote that to a new column/csv file
     #CleanMasterCSVtest = pd.read_csv('C:/Users/Jonathan/Documents/GitHub/ConservativeSentimentAnalysis/master_clean.csv')
     ##ScoreAppendedDF = appendSentimentScore(CleanMasterCSVtest)
-    ##ScoreAppendedDF.to_csv('C:/Users/Jonathan/Documents/GitHub/ConservativeSentimentAnalysis/master_clean_scores.csv')
+    ##ScoreAppendedDF.to_csv('C:/Users/Jonathan/Documents/GitHub/ConservativeSentimentAnalysis/master_clean_scores.csv', index=False)
 
     ## These succesfully appended a keyword/value column onto the master comment list with word/value presence 1/0 binary data
     #CleanMasterCSVtest = pd.read_csv('C:/Users/Jonathan/Documents/GitHub/ConservativeSentimentAnalysis/master_clean_scores_test.csv')
     #SentimentScoresTest = matchValues2Sentiment(CleanMasterCSVtest, "you")
-    #SentimentScoresTest.to_csv('C:/Users/Jonathan/Documents/GitHub/ConservativeSentimentAnalysis/SentimentKeyValueScores_test.csv')
+    #SentimentScoresTest.to_csv('C:/Users/Jonathan/Documents/GitHub/ConservativeSentimentAnalysis/SentimentKeyValueScores_test.csv', index=False)
 
     ## These succesfully appended a keyword/value column onto the TEST master comment list with word/value presence 1/0 binary data
     # Currently need to add an additional step to the cleanDataFrame() function for dropping empty cells
     # Seems to occur with deleted authors. Right now the main query is getting hung up on the empty cells
-    ScoredMasterCSVtest = pd.read_csv('C:/Users/Jonathan/Documents/GitHub/ConservativeSentimentAnalysis/master_clean_scores.csv')
-    KeyWordQueriedBinaryComments = commentQueryController(ScoredMasterCSVtest, ["you", "illegal"])
+    ScoredMasterCSVtest = pd.read_csv('C:/Users/Jonathan/Documents/GitHub/ConservativeSentimentAnalysis/master_scored_queried.csv')
+    FemaleKeywords = ["she","her","woman","women","girl","girls","female","females","lady","ladies","mom","mother","daughter","grandma",
+    "grandmother","girlfriend","girlfriends","sister","sisters","wife","wives","matriarch","feminine"]
     
-    KeyWordQueriedBinaryComments.to_csv('C:/Users/Jonathan/Documents/GitHub/ConservativeSentimentAnalysis/master_scored_queried.csv')
-    print("complete")
+    MaleKeywords = ["he", "him","his","man","men","boy","boys","male","males","father","grandpa","grandfather","son","boyfriend",
+    "boyfriends","brother","brothers", "bro", "bros","husband","husbands","patriarch","masculine"]
+
+    MaleKeyWordSingle = ["he"]
+    
+    KeyWordQueriedBinaryComments = commentQueryController(ScoredMasterCSVtest, MaleKeyWordSingle, "Sentiment Female")
