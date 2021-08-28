@@ -105,8 +105,8 @@ def pushshiftAPIController(subreddit, before, after, interval, limit = 10000000)
 
 
 if __name__ == '__main__':
-    beforeDate = '20200215'
-    afterDate = '20200101'
-    pushshiftAPIController("conservative", beforeDate, afterDate, interval = 10, limit = 10000000)
+    beforeDate = '20210827'
+    afterDate = '20150501'
+    pushshiftAPIController("politics", beforeDate, afterDate, interval = 100, limit = 10000000)
 
     

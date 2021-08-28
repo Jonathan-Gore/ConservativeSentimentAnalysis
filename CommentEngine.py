@@ -59,19 +59,25 @@ def cleanDataframe(CommentDataframe):
 
     return CommentDataframe
 
-## This works!
+## This DOES NOT work!
+# Needs to use SQL for inputing line by line, the database is too large to load in via CSV
+# Need to make the internal csv write call dynamic not static
 def appendSentimentScore(CleanCommentDF):
     comments = CleanCommentDF["body"]
     analyzer = SentimentIntensityAnalyzer()
-    vs_list = []
+    #vs_list = []
     
+    i = 0
     for comment in comments:
         vs = analyzer.polarity_scores(str(comment))
-        vs_list.append(vs["compound"])
+        #vs_list.append(vs["compound"])
+        CleanCommentDF.loc[i, "Sentiment Score"] = vs["compound"]
+        CleanCommentDF.to_csv('C:/Users/Jonathan/Documents/GitHub/ConservativeSentimentAnalysis/master_clean_scores.csv', index=False)
         print("{:-<65} {}".format(comment, str(vs['compound'])))
+        i = i + 1
     #    #print(CleanMasterCSVtest['id'])
     
-    CleanCommentDF["Sentiment Score"] = vs_list
+    #CleanCommentDF["Sentiment Score"] = vs_list
     return CleanCommentDF
 
 ## This function searches each 'bodyclean' of the Clean and Scored Master comment csv
@@ -118,9 +124,9 @@ if __name__ == '__main__':
     #print("complete")
 
     ## These succesfully cleaned and removed "deleted" comments
-    #MasterCSV_DF = pd.read_csv('C:/Users/Jonathan/Documents/GitHub/ConservativeSentimentAnalysis/master_clean_scores.csv')
+    #MasterCSV_DF = pd.read_csv('C:/Users/Jonathan/Documents/GitHub/ConservativeSentimentAnalysis/master.csv')
     #CleanMasterCSV = cleanDataframe(MasterCSV_DF)
-    #CleanMasterCSV.to_csv('C:/Users/Jonathan/Documents/GitHub/ConservativeSentimentAnalysis/master_clean_scores.csv', index=False)
+    #CleanMasterCSV.to_csv('C:/Users/Jonathan/Documents/GitHub/ConservativeSentimentAnalysis/master_clean.csv', index=False)
     #print("complete")
 
     ## These successfully counted all word frequencies in the master_clean.csv and wrote them to a new csv file
@@ -133,9 +139,11 @@ if __name__ == '__main__':
 
     ## This worked! Created a list of sentiment values
     # then wrote that to a new column/csv file
-    #CleanMasterCSVtest = pd.read_csv('C:/Users/Jonathan/Documents/GitHub/ConservativeSentimentAnalysis/master_clean.csv')
-    ##ScoreAppendedDF = appendSentimentScore(CleanMasterCSVtest)
-    ##ScoreAppendedDF.to_csv('C:/Users/Jonathan/Documents/GitHub/ConservativeSentimentAnalysis/master_clean_scores.csv', index=False)
+    CleanMasterCSVtest = pd.read_csv('C:/Users/Jonathan/Documents/GitHub/ConservativeSentimentAnalysis/master_clean.csv')
+    #ScoreAppendedDF = appendSentimentScore(CleanMasterCSVtest)
+    appendSentimentScore(CleanMasterCSVtest)
+    #ScoreAppendedDF.to_csv('C:/Users/Jonathan/Documents/GitHub/ConservativeSentimentAnalysis/master_clean_scores_test.csv', index=False)
+    print("complete")
 
     ## These succesfully appended a keyword/value column onto the master comment list with word/value presence 1/0 binary data
     #CleanMasterCSVtest = pd.read_csv('C:/Users/Jonathan/Documents/GitHub/ConservativeSentimentAnalysis/master_clean_scores_test.csv')
@@ -145,13 +153,13 @@ if __name__ == '__main__':
     ## These succesfully appended a keyword/value column onto the TEST master comment list with word/value presence 1/0 binary data
     # Currently need to add an additional step to the cleanDataFrame() function for dropping empty cells
     # Seems to occur with deleted authors. Right now the main query is getting hung up on the empty cells
-    ScoredMasterCSVtest = pd.read_csv('C:/Users/Jonathan/Documents/GitHub/ConservativeSentimentAnalysis/master_scored_queried.csv')
-    FemaleKeywords = ["she","her","woman","women","girl","girls","female","females","lady","ladies","mom","mother","daughter","grandma",
-    "grandmother","girlfriend","girlfriends","sister","sisters","wife","wives","matriarch","feminine"]
+    #ScoredMasterCSVtest = pd.read_csv('C:/Users/Jonathan/Documents/GitHub/ConservativeSentimentAnalysis/master_scored_queried.csv')
+    #FemaleKeywords = ["she","her","woman","women","girl","girls","female","females","lady","ladies","mom","mother","daughter","grandma",
+    #"grandmother","girlfriend","girlfriends","sister","sisters","wife","wives","matriarch","feminine"]
     
-    MaleKeywords = ["he", "him","his","man","men","boy","boys","male","males","father","grandpa","grandfather","son","boyfriend",
-    "boyfriends","brother","brothers", "bro", "bros","husband","husbands","patriarch","masculine"]
+    #MaleKeywords = ["he", "him","his","man","men","boy","boys","male","males","father","grandpa","grandfather","son","boyfriend",
+    #"boyfriends","brother","brothers", "bro", "bros","husband","husbands","patriarch","masculine"]
 
-    MaleKeyWordSingle = ["he"]
+    #MaleKeyWordSingle = ["he"]
     
-    KeyWordQueriedBinaryComments = commentQueryController(ScoredMasterCSVtest, MaleKeyWordSingle, "Sentiment Female")
+    #KeyWordQueriedBinaryComments = commentQueryController(ScoredMasterCSVtest, MaleKeyWordSingle, "Sentiment Female")
