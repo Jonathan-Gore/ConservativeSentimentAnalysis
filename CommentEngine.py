@@ -56,6 +56,7 @@ def cleanDataframe(CommentDataframe):
     CommentDataframe["bodyclean"].replace('', np.nan, inplace=True)
     # Drop all NaN values (previously "deleted" comments), cleaning up the dataset
     CommentDataframe.dropna(subset=["bodyclean"], inplace=True)
+    #print("Cleaned file: " + str(CommentDataframe.head(3)))
 
     return CommentDataframe
 
@@ -72,8 +73,8 @@ def appendSentimentScore(CleanCommentDF):
         vs = analyzer.polarity_scores(str(comment))
         #vs_list.append(vs["compound"])
         CleanCommentDF.loc[i, "Sentiment Score"] = vs["compound"]
-        CleanCommentDF.to_csv('C:/Users/Jonathan/Documents/GitHub/ConservativeSentimentAnalysis/master_clean_scores.csv', index=False)
-        print("{:-<65} {}".format(comment, str(vs['compound'])))
+        #CleanCommentDF.to_csv('C:/Users/Jonathan/Documents/GitHub/ConservativeSentimentAnalysis/master_clean_scores.csv', index=False)
+        #print("{:-<65} {}".format(comment, str(vs['compound'])))
         i = i + 1
     #    #print(CleanMasterCSVtest['id'])
     
@@ -109,6 +110,19 @@ def commentQueryController(ScoredComments, WordsOfInterest, WordCategory):
     return print("completed")
 
 
+def commentCleaningController(mypath):
+    onlyfiles = [f for f in listdir(mypath) if isfile(join(mypath, f)) and os.path.splitext(f)[1] == '.csv']
+
+    for file in onlyfiles:
+        print("Beginning to clean and score file: " + str(file))
+        limboCSV = appendSentimentScore(cleanDataframe(pd.read_csv(mypath + file)))
+        limboCSV.to_csv(mypath + "_cleanedANDscored" + file, index = False)
+        print("Completed cleaning and scoring file: " + str(file))
+    
+    print("cleaned all files in folder: " + str(mypath))
+    return onlyfiles
+
+
 if __name__ == '__main__':
 
     ## These successfully combined all of the API csv files into one master file
@@ -139,11 +153,11 @@ if __name__ == '__main__':
 
     ## This worked! Created a list of sentiment values
     # then wrote that to a new column/csv file
-    CleanMasterCSVtest = pd.read_csv('C:/Users/Jonathan/Documents/GitHub/ConservativeSentimentAnalysis/master_clean.csv')
+    #CleanMasterCSVtest = pd.read_csv('C:/Users/Jonathan/Documents/GitHub/ConservativeSentimentAnalysis/master_clean.csv')
     #ScoreAppendedDF = appendSentimentScore(CleanMasterCSVtest)
-    appendSentimentScore(CleanMasterCSVtest)
+    #appendSentimentScore(CleanMasterCSVtest)
     #ScoreAppendedDF.to_csv('C:/Users/Jonathan/Documents/GitHub/ConservativeSentimentAnalysis/master_clean_scores_test.csv', index=False)
-    print("complete")
+    #print("complete")
 
     ## These succesfully appended a keyword/value column onto the master comment list with word/value presence 1/0 binary data
     #CleanMasterCSVtest = pd.read_csv('C:/Users/Jonathan/Documents/GitHub/ConservativeSentimentAnalysis/master_clean_scores_test.csv')
@@ -163,3 +177,8 @@ if __name__ == '__main__':
     #MaleKeyWordSingle = ["he"]
     
     #KeyWordQueriedBinaryComments = commentQueryController(ScoredMasterCSVtest, MaleKeyWordSingle, "Sentiment Female")
+
+    ## Working on the new commentCleaningController(), in future steps will be as follows:
+    # FileDirectory of all raw csvs -> commentCleaningController -> iterate through all csvs and clean/attach a sentiment score
+    # Then these cleaned and scored csvs will be uploaded to PostgreSQL database administrated with DBeaver
+    commentCleaningController("C:/git/ConservativeSentimentAnalysisDATA/RAWr_conservative/")
